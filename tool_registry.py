@@ -5,40 +5,6 @@ tools = {}
 tools_by_tag = {}
 
 
-def to_openai_tools(tools_metadata: List[dict]):
-    """
-    Converts a list of internal tool metadata dictionaries into the format required by OpenAI/Cohere tool calling APIs.
-
-    Each tool in the input list should include keys like 'tool_name', 'description', and 'parameters'.
-    This function wraps each tool as a 'function' type tool for use in LLM function calling.
-
-    Parameters:
-        tools_metadata (List[dict]): A list of dictionaries, each representing metadata for a registered tool.
-
-    Returns:
-        List[dict]: A list of formatted tool definitions compatible with OpenAI or Cohere tool calling interface.
-    """
-    if not isinstance(tools_metadata, list):
-        raise ValueError("tools_metadata must be a list of dictionaries.")
-    if not all(isinstance(t, dict) for t in tools_metadata):
-        raise ValueError("Each item in tools_metadata must be a dictionary.")
-    if not all('tool_name' in t and 'description' in t for t in tools_metadata):
-        raise ValueError("Each tool metadata must contain 'tool_name' and 'description' keys.")
-    if not all('parameters' in t for t in tools_metadata):
-        raise ValueError("Each tool metadata must contain 'parameters' key.")   
-    cohere_tools = [
-        {
-            "type": "function",
-            "function": {
-                "name": t['tool_name'],
-                # Include up to 1024 characters of the description
-                "description": t.get('description',"")[:1024],
-                "parameters": t.get('parameters',{}),
-            },
-        } for t in tools_metadata
-    ]
-    return cohere_tools
-
 def get_tool_metadata(func, tool_name=None, description=None, parameters_override=None, terminal=False, tags=None):
     """
     Extracts metadata for a function to use in tool registration.

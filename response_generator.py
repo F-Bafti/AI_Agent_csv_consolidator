@@ -99,7 +99,7 @@ def generate_response(prompt: Prompt) -> str:
             else:
                 result = response.content
 
-        print(f"DEBUG: Returning result: {result}")
+        # print(f"DEBUG: Returning result: {result}")
         return result
 
     except Exception as e:

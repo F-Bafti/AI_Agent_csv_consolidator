@@ -30,6 +30,16 @@ def normalize_center_keyword(center_keyword: str, files: list[str]) -> str:
     return matches[0] if matches else center_keyword.lower()
 
 
+def infer_center_name_from_filename(filename: str) -> str:
+    """
+    Extract the base center name from a filename using patterns and normalization.
+    """
+    base = os.path.splitext(os.path.basename(filename))[0].lower()
+    # Normalize underscores and remove trailing numbers
+    name = re.sub(r"(_?\d+)?$", "", base)
+    name = re.sub(r"[^a-zA-Z0-9آ-ی_]+", "", name)
+    return name.strip("_")
+
 
 ################ Constants
 
@@ -50,6 +60,8 @@ EXPECTED_COLUMNS = [
 
 SYNONYM_MAP = {
     "مبلغ پرداخت شده به معلم بعد از تخفیفات": "هزینه پرداختی به معلم",
+    "مبلغ واریزی به معلم": "هزینه پرداختی به معلم",
+    "هزینه واریزی به معلم" : "هرینه پرداختی به معلم",
     "کل مبلغ واریزی نهایی به مدرس بابت کلاس بعد از تخفیفات. لطفا مبلغ را به تومان وارد کنید": "هزینه پرداختی به معلم",
     "کل مبلغ واریزی به حساب مدرس بعد از تحقیقات (مبلغی که از محل حساب گلستان پرداخت می" : "هزینه پرداختی به معلم",
     "نام و نام خانوادگی معلم": "نام معلم",
@@ -58,6 +70,9 @@ SYNONYM_MAP = {
     "تعداد دانش آموزان": "تعداد مددجویان شرکت کننده",
     "نوع دوره پیشنهادی": "نوع دوره",
     "توضیحات مرتبط-هر نکته ای که در مورد این دوره لازم به ذکر هست بنویسید." : "توضیحات",
+    "اسم مرکز": "نام مرکز",
+    "نام مرکز آموزشی": "نام مرکز",
+    "نام مرکز آموزشی یا موسسه": "نام مرکز",
     # Add more as needed...
 }
 
@@ -349,15 +364,7 @@ def list_center_csv_files_current_dir(center_keyword: str) -> List[str]:
         return [f"❌ Error: {e}"]
 
 
-def infer_center_name_from_filename(filename: str) -> str:
-    """
-    Extract the base center name from a filename using patterns and normalization.
-    """
-    base = os.path.splitext(os.path.basename(filename))[0].lower()
-    # Normalize underscores and remove trailing numbers
-    name = re.sub(r"(_?\d+)?$", "", base)
-    name = re.sub(r"[^a-zA-Z0-9آ-ی_]+", "", name)
-    return name.strip("_")
+
 
 
 @register_tool(tags=["file_operations", "clean"])
