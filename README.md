@@ -10,12 +10,12 @@ You just chat with it naturally! This is the link to Github repo for the agent.
 ## Summary:
 
 1. GAME.py<br>
-	•	Core classes: Goal, Action, ActionRegistry, Memory, Environment.<br>
-	•	Defines the structure for goals, actions, storing memory, and executing actions safely.<br>
+	-	Core classes: Goal, Action, ActionRegistry, Memory, Environment.<br>
+	-	Defines the structure for goals, actions, storing memory, and executing actions safely.<br>
 <br>
 2. agent.py<br>
-	•	Wraps everything into an Agent.<br>
-	•	Loops through:<br>
+	-	Wraps everything into an Agent.<br>
+	-	Loops through:<br>
 	1.	Constructing a prompt from goals, memory, and actions.<br>
 	2.	Sending it to the LLM (generate_response).<br>
 	3.	Parsing the LLM’s response to choose an action.<br>
@@ -24,18 +24,18 @@ You just chat with it naturally! This is the link to Github repo for the agent.
 	6.	Checking if the agent should terminate.<br>
 <br>
 3. language.py<br>
-	•	Translates the agent’s goals, memory, and available actions into a prompt the LLM can understand.<br>
-	•	Handles parsing the LLM’s response into tool calls (parse_response).<br>
+	-	Translates the agent’s goals, memory, and available actions into a prompt the LLM can understand.<br>
+	-	Handles parsing the LLM’s response into tool calls (parse_response).<br>
 <br>
 4. response_generator.py<br>
-	•	Calls the LLM (Cohere via LangChain) with a prompt.<br>
-	•	Handles tool/function calls, formats the result, applies timeout handling.<br>
-	•	Returns either text or a JSON representing which tool to call and its arguments.<br>
+	-	Calls the LLM (Cohere via LangChain) with a prompt.<br>
+	-	Handles tool/function calls, formats the result, applies timeout handling.<br>
+	-	Returns either text or a JSON representing which tool to call and its arguments.<br>
 <br>
 5. tool_registry.py<br>
-	•	Dynamically registers Python functions as tools for the agent.<br>
-	•	Provides metadata (parameters, JSON schema, description, terminal flag, tags).<br>
-	•	Decorator @register_tool makes a function available to the agent.<br>
+	-	Dynamically registers Python functions as tools for the agent.<br>
+	-	Provides metadata (parameters, JSON schema, description, terminal flag, tags).<br>
+	-	Decorator @register_tool makes a function available to the agent.<br>
 <br>
 ⸻<br>
 <br>
@@ -44,7 +44,7 @@ Full flow:<br>
 	2.	Agent: set_current_task → memory updated.<br>
 	3.	Prompt built: AgentLanguage.construct_prompt() gathers goals, memory, actions.<br>
 	4.	LLM call: generate_response() → returns JSON like:<br>
-     5.	Agent parses response: get_action() → gets the corresponding Action.<br>
+    5.	Agent parses response: get_action() → gets the corresponding Action.<br>
 	6.	Action executed: Environment.execute_action() → runs the Python function safely.<br>
 	7.	Memory updated: stores both the agent’s reasoning and environment result.<br>
 	8.	Check termination: repeat until either the agent calls terminate or max iterations reached.<br>
