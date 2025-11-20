@@ -10,12 +10,12 @@ You just chat with it naturally! This is the link to Github repo for the agent.
 ## Summary:
 
 1. GAME.py<br>
-	-	Core classes: Goal, Action, ActionRegistry, Memory, Environment.
-	-	Defines the structure for goals, actions, storing memory, and executing actions safely.
+	-	Core classes: Goal, Action, ActionRegistry, Memory, Environment.<br>
+	-	Defines the structure for goals, actions, storing memory, and executing actions safely.<br>
 <br>
-2. agent.py
-	-	Wraps everything into an Agent.
-	-	Loops through:
+2. agent.py<br>
+	-	Wraps everything into an Agent.<br>
+	-	Loops through:<br>
 	1.	Constructing a prompt from goals, memory, and actions.<br>
 	2.	Sending it to the LLM (generate_response).<br>
 	3.	Parsing the LLM’s response to choose an action.<br>
