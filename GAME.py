@@ -41,6 +41,7 @@ class Action:
         """Execute the action's function"""
         return self.function(**args)
 
+
 # Creates a container to store all available actions
 class ActionRegistry:
     def __init__(self):

@@ -1,5 +1,5 @@
 import inspect
-from typing import get_type_hints, List, Callable, Dict, Any, Optional
+from typing import get_type_hints, List, Dict, Optional
 
 tools = {}
 tools_by_tag = {}

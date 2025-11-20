@@ -1,7 +1,7 @@
 import json
 from typing import List, Callable, Any
 from GAME import Goal, Environment, ActionRegistry, Memory
-from agent_language import AgentLanguage
+from language import AgentLanguage
 from response_generator import Prompt
 
 class Agent:

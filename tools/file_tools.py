@@ -1,5 +1,6 @@
 import os
 import re
+import time
 import pandas as pd
 from  typing import List
 from tool_registry import  register_tool
@@ -64,12 +65,14 @@ SYNONYM_MAP = {
     "هزینه واریزی به معلم" : "هرینه پرداختی به معلم",
     "کل مبلغ واریزی نهایی به مدرس بابت کلاس بعد از تخفیفات. لطفا مبلغ را به تومان وارد کنید": "هزینه پرداختی به معلم",
     "کل مبلغ واریزی به حساب مدرس بعد از تحقیقات (مبلغی که از محل حساب گلستان پرداخت می" : "هزینه پرداختی به معلم",
+    "مبلغ واریزی به معلم (لطفا فقط عدد مبلغ را به تومان  و به انگلیسی وارد کنید)" : "هزینه پرداختی به معلم",
     "نام و نام خانوادگی معلم": "نام معلم",
     "نام مدرس": "نام معلم",
     "نام و نام خانوادگی مدرس" : "نام معلم",
     "تعداد دانش آموزان": "تعداد مددجویان شرکت کننده",
     "نوع دوره پیشنهادی": "نوع دوره",
     "توضیحات مرتبط-هر نکته ای که در مورد این دوره لازم به ذکر هست بنویسید." : "توضیحات",
+    "توضیح هزینه های اضافی" : "توضیحات",
     "اسم مرکز": "نام مرکز",
     "نام مرکز آموزشی": "نام مرکز",
     "نام مرکز آموزشی یا موسسه": "نام مرکز",
@@ -89,6 +92,71 @@ COLUMN_TYPES = {
         "تاریخ شروع دوره", "تاریخ پایان دوره"
     ]
 }
+
+
+@register_tool(tags=["system", "list"])
+def get_current_directory() -> str:
+    """
+    USAGE: Use when user asks 'what is the current directory', 'where am I', or 'current path'.
+    
+    Returns the absolute path of the current working directory.
+    """
+    return os.getcwd()
+
+
+@register_tool(tags=["file_operations", "list"])
+def list_directory_contents(path: str = "") -> str:
+    """
+    USAGE: Use when user asks 'list all files', 'show contents', 'ls -lrt', or 'what is in this directory'.
+    
+    Lists all files and directories in the specified path (defaults to current directory). 
+    It includes type, size, and last modified time for a comprehensive view, similar to 'ls -lrt'.
+    
+    Args:
+        path: The directory path (defaults to current working directory).
+    """
+    try:
+        resolved_path = resolve_path(path)
+        contents = os.listdir(resolved_path)
+        
+        if not contents:
+            return f"The directory '{resolved_path}' is empty."
+        
+        # Prepare header
+        output = ["Type | Size (Bytes) | Modified Date/Time      | Name"]
+        output.append("-" * 60)
+        
+        # Gather stats for each item
+        for item in contents:
+            full_path = os.path.join(resolved_path, item)
+            
+            # Get stat information
+            stat_info = os.stat(full_path)
+            
+            # Determine type
+            if os.path.isdir(full_path):
+                file_type = "DIR"
+                size = ""
+            elif os.path.islink(full_path):
+                file_type = "LINK"
+                size = stat_info.st_size
+            else:
+                file_type = "FILE"
+                size = stat_info.st_size
+            
+            # Format modification time
+            modified_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(stat_info.st_mtime))
+            
+            # Format line (padding ensures alignment)
+            line = f"{file_type:4} | {str(size):12} | {modified_time} | {item}"
+            output.append(line)
+        
+        return "\n".join(output)
+        
+    except FileNotFoundError:
+        return f"❌ Directory '{path}' not found."
+    except Exception as e:
+        return f"❌ Error listing directory contents: {e}"
 
 
 @register_tool(tags=["file_operations", "match"])
@@ -162,7 +230,6 @@ def list_csv_files() -> List[str]:
     return sorted([file for file in os.listdir(".") if file.lower().endswith(".csv")])  
 
 
-import re
 
 @register_tool(tags=["file_operations", "count"])
 def count_csv_files(path: str = "") -> str:
@@ -815,3 +882,60 @@ def consolidate_center_csv_files(center_keyword: str, source_path: str = "cleane
         
     except Exception as e:
         return f"❌ Error during center consolidation: {e}"
+    
+
+# In tools/file_tools.py (Add this function)
+
+@register_tool(tags=["file_operations", "list", "detail"])
+def list_detailed_csv_files(path: str = "") -> str:
+    """
+    USAGE: Use when user asks 'ls -lrt for csvs', 'list detailed csv files', 
+    'show size and date of csvs', or 'list all csv files with details'.
+    
+    Lists all CSV files in the specified path (defaults to current directory), 
+    including their size and last modified date, similar to 'ls -lrt' for CSVs only.
+    
+    Args:
+        path: The directory path (defaults to current working directory).
+    """
+    try:
+        # 1. Resolve Path
+        resolved_path = resolve_path(path)
+        
+        # 2. Filter for CSV files
+        all_files = os.listdir(resolved_path)
+        csv_files = sorted([f for f in all_files if f.lower().endswith(".csv")])
+        
+        if not csv_files:
+            return f"No CSV files found in the directory '{resolved_path}'."
+        
+        # 3. Prepare output
+        output = ["Type | Size (KB) | Modified Date/Time      | Name"]
+        output.append("-" * 75)
+        
+        # 4. Gather stats for each CSV
+        for item in csv_files:
+            full_path = os.path.join(resolved_path, item)
+            
+            # Use os.stat to get metadata
+            stat_info = os.stat(full_path)
+            
+            # Size in KB (or bytes if less than 1KB)
+            size_bytes = stat_info.st_size
+            size_kb = round(size_bytes / 1024, 2)
+            
+            # Format modification time using the imported 'time' module
+            modified_time = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(stat_info.st_mtime))
+            
+            # Format line
+            # Using FILE for all CSVs and padding for alignment
+            line = f"{'FILE':4} | {size_kb:8.2f} | {modified_time} | {item}"
+            output.append(line)
+
+        # 5. Return formatted string
+        return "\n".join(output)
+        
+    except FileNotFoundError:
+        return f"❌ Directory '{path}' not found."
+    except Exception as e:
+        return f"❌ Error listing detailed CSV files: {e}"

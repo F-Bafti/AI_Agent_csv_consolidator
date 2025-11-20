@@ -51,58 +51,45 @@ class AgentFunctionCallingActionLanguage(AgentLanguage):
 CRITICAL TOOL SELECTION GUIDELINES:
 =================================
 
-🎯 CENTER-SPECIFIC FILE QUERIES (when user mentions a specific center name):
+🎯 CENTER-SPECIFIC FILE QUERIES:
 - "how many files from [center]" → count_center_csv_files(center_keyword="[center]", path="...")
 - "count files from [center]" → count_center_csv_files(center_keyword="[center]", path="...")  
-- "how many [center] files" → count_center_csv_files(center_keyword="[center]", path="...")
 - "list files from [center]" → list_center_csv_files(center_keyword="[center]", path="...")
 - "show [center] files" → list_center_csv_files(center_keyword="[center]", path="...")
-- "files related to [center]" → list_center_csv_files(center_keyword="[center]", path="...")
 
-🎯 ALL FILES QUERIES (when user wants to see everything):
-- "list all files" → list_csv_files_in_dir(path="...")
-- "show all csvs" → list_csv_files_in_dir(path="...")
-- "what files are in [directory]" → list_csv_files_in_dir(path="[directory]")
-- "list files in [directory]" → list_csv_files_in_dir(path="[directory]")
+🎯 ALL FILES QUERIES (General Directory Listing):
+- "list all files" → list_directory_contents(path=".")
+- "show contents" → list_directory_contents(path=".")
+- "ls -lrt" → list_directory_contents(path=".")
+- "what files are in [directory]" → list_directory_contents(path="[directory]")
+- "list files in [directory]" → list_directory_contents(path="[directory]")
 
-🎯 CURRENT DIRECTORY QUERIES:
-- "list csv files" (while in target dir) → list_csv_files()
-- "show csvs" (while in target dir) → list_csv_files()
-- "how many csv files" (in current dir) → count_csv_files()
-- "count csv files" (in current dir) → count_csv_files()
-
-🎯 SMART PATH DETECTION QUERIES:
+🎯 CSV FILES QUERIES (Simple Listing and Counting):
+- "list all csvs" → list_csv_files_in_dir(path=".")
+- "show all csvs" → list_csv_files_in_dir(path=".")
+- "what csvs are here" → list_csv_files_in_dir(path=".")
+- "how many csv files" → count_csv_files(path=".")
+- "count csv files" → count_csv_files(path=".")
 - "how many csv files in [directory]" → count_csv_files(path="[directory]")
-- "count files in [directory]" → count_csv_files(path="[directory]")
-- "how many csv files in input_csvs" → count_csv_files(path="input_csvs")
+
+🎯 CSV DETAIL QUERIES:
+- "ls -lrt for csvs" → list_detailed_csv_files(path=".")
+- "list detailed csv files" → list_detailed_csv_files(path=".")
+- "show size and date of csvs" → list_detailed_csv_files(path=".")
 
 🎯 FILE CLEANING QUERIES:
 - "clean [filename]" → clean_csv_file(file_path="[filename]")
-- "clean all files" → clean_all_csv_files()
-- "clean all csvs" → clean_all_csv_files()  
-- "clean everything" → clean_all_csv_files()
-- "process all files" → clean_all_csv_files()
-- "batch clean files" → clean_all_csv_files()
+- "clean all csvs" → clean_all_csv_files(path=".")
+- "process all files" → clean_all_csv_files(path=".")
+- "batch clean files" → clean_all_csv_files(path=".")
 - "clean all files in [directory]" → clean_all_csv_files(path="[directory]")
 - "clean all files and show preview" → clean_all_csv_files_with_preview()
-- "process all csvs with preview" → clean_all_csv_files_with_preview()
 
-📝 EXAMPLES OF CORRECT TOOL SELECTION:
-- "how many files from neyshabour" → count_center_csv_files(center_keyword="neyshabour")
-- "how many files we have from neyshabour" → count_center_csv_files(center_keyword="neyshabour") 
-- "list files from boushehr" → list_center_csv_files(center_keyword="boushehr")
-- "show all files in input_csvs" → list_csv_files_in_dir(path="input_csvs")
-- "list all the files in input_csvs" → list_csv_files_in_dir(path="input_csvs")
-
-⚠️ COMMON MISTAKES TO AVOID:
-- DO NOT use list_csv_files_in_dir for center-specific queries
-- DO NOT use list_csv_files for queries that specify a directory path
-- ALWAYS extract the center name from user queries like "neyshabour", "boushehr", "sanandaj"
-
-🔍 CENTER NAME EXTRACTION:
-- "neyshabour" → center_keyword="neyshabour"
-- "boushehr" → center_keyword="boushehr"  
-- "sanandaj" → center_keyword="sanandaj"
+🎯 TERMINATION QUERIES:
+- "bye" → terminate(message="Goodbye! Task complete.")
+- "exit" → terminate(message="Task complete. Terminating.")
+- "I'm done" / "That's all" / "thanks" → terminate(message="Task complete. Terminating.")
+- If the conversation is clearly finished and the user has expressed satisfaction or intent to end.
 =================================
 """
         
@@ -171,15 +158,20 @@ CRITICAL TOOL SELECTION GUIDELINES:
 
         return prompt
 
+    # In language.py, update parse_response
+
     def parse_response(self, response: str) -> dict:
         try:
+            # 1. First, try to parse the LLM's response as a tool call (JSON)
             parsed = json.loads(response)
             if "args" not in parsed or not isinstance(parsed["args"], dict):
                 parsed["args"] = {}
             return parsed
         except Exception:
+            # 2. If JSON parsing fails (i.e., the LLM returned plain text),
+            #    force the agent to call the 'say' tool with the plain text.
             return {
-                "tool": "terminate",
+                "tool": "say",  # <--- CHANGED FROM 'terminate' TO 'say'
                 "args": {"message": response}
             }
 
@@ -189,18 +181,22 @@ class PythonActionRegistry(ActionRegistry):
         super().__init__()
 
         self.terminate_tool = None
-
+        
+        # Collect tools based on tags/names
+        tools_to_register = []
         for tool_name, tool_desc in tools.items():
             if tool_name == "terminate":
                 self.terminate_tool = tool_desc
-
-            if tool_names and tool_name not in tool_names:
-                continue
+                continue # Skip registering here, handle separately
 
             tool_tags = tool_desc.get("tags", [])
             if tags and not any(tag in tool_tags for tag in tags):
                 continue
 
+            tools_to_register.append((tool_name, tool_desc))
+
+        # Register filtered tools
+        for tool_name, tool_desc in tools_to_register:
             self.register(Action(
                 name=tool_name,
                 function=tool_desc["function"],
@@ -208,6 +204,9 @@ class PythonActionRegistry(ActionRegistry):
                 parameters=tool_desc.get("parameters", {}),
                 terminal=tool_desc.get("terminal", False)
             ))
+            
+        # 🔑 FIX: Ensure terminate tool is registered last
+        self.register_terminate_tool()
 
     def register_terminate_tool(self):
         if self.terminate_tool:
@@ -216,7 +215,8 @@ class PythonActionRegistry(ActionRegistry):
                 function=self.terminate_tool["function"],
                 description=self.terminate_tool["description"],
                 parameters=self.terminate_tool.get("parameters", {}),
-                terminal=self.terminate_tool.get("terminal", False)
+                terminal=True # Force terminal to be True
             ))
         else:
-            raise Exception("Terminate tool not found in tool registry")
+            # You should check that system_tools.py successfully loaded
+            raise Exception("Terminate tool not found in tool registry. Check system_tools.py import.")

@@ -21,7 +21,7 @@ def generate_response(prompt: Prompt) -> str:
     try:
         # Initialize Cohere model with LangChain
         llm = ChatCohere(
-            model="command-r-plus",
+            model="command-a-03-2025",
             max_tokens=1024,
             temperature=0.3,
             timeout=30

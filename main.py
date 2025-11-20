@@ -2,19 +2,15 @@ import os
 from dotenv import load_dotenv
 from response_generator import generate_response
 from GAME import Goal, Memory, Environment
-from agent_language import AgentFunctionCallingActionLanguage, PythonActionRegistry
-from agent_loop import Agent
+from language import AgentFunctionCallingActionLanguage, PythonActionRegistry
+from agent import Agent
 import tools.file_tools
 import tools.system_tools
 
 
 load_dotenv()  # Load variables from .env file
-
-
 api_key = os.getenv("COHERE_API_KEY")
 os.environ["COHERE_API_KEY"] = api_key
-
-
 
 
 # Define the agent's goals
@@ -30,7 +26,7 @@ goals = [
          description="Clean CSV files and merge them into a consolidated report."),
     Goal(priority=4,
          name="Terminate",
-         description="Call terminate when the user explicitly asks or the task is complete.")
+         description="Call terminate when the user explicitly asks or the task is compelete."),
 ]
 
 
@@ -47,6 +43,10 @@ agent = Agent(
 # Start interactive loop
 memory = Memory()
 
+print("")
+print("")
+print("======================================================================================================")
+print("")
 print("Hi, I'm your agent. Ask me to explore directories, list CSVs, or analyze files. Type 'exit' to quit.\n")
 
 while True:
@@ -62,7 +62,7 @@ while True:
     result = agent.environment.execute_action(action, invocation["args"])
 
     agent.update_memory(memory, response, result)
-
+    
     if result.get("tool_executed"):
         print(f"\n🤖 Agent: {result['result']}\n")
     else:
